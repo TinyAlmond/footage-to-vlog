@@ -1,0 +1,67 @@
+{
+ "name": "coast",
+ "note": "A 70 s coast trip in seven sections, told by point of view rather than by day: from above -> eye level -> sunset -> turn around to the moon -> that night's astro photo. 90 BPM, every cut on a bar line. Paths are relative to this file.",
+ "fps": "30000/1001",
+ "bpm": 90,
+ "sources": {
+  "camels": "../src/drone_0110.mp4",
+  "sunset": "../src/drone_0109.mp4",
+  "pools": "../src/drone_0206.mp4",
+  "cliffs": "../src/drone_0215.mp4",
+  "eye": "../src/drone_0216.mp4",
+  "platform": "../src/drone_0219.mp4",
+  "reveal": "../src/drone_0220.mp4",
+  "walk": "../src/ground_214704.mov",
+  "moon": "../src/ground_214537.mov",
+  "waves": "../sdr/IMG_2445.mov",
+  "dog": "../sdr/IMG_2478.mov",
+  "nebula": "../stills/helix.jpg"
+ },
+ "shots": [
+  {"role": "hook", "sec": "hook", "src": "camels", "t_in": 72.3, "speed": 0.5, "bars": 2, "v": "rot",
+   "zoom": [2.0, 1.15], "centre": "track", "lock": true,
+   "note": "the rarest image first: a camel train from straight above, 60 fps at 0.5x, pulling out from tight. 72.3-75.0 s is the stretch where the drone holds still. Tracked with track.py --color 0-12,170-180/110/90"},
+  {"role": "a_eye", "sec": "above", "src": "eye", "t_in": 0.5, "bars": 2, "v": "rot",
+   "note": "top-down shots are turned 90 deg in the vertical cut: the whole frame, full screen"},
+  {"role": "a_cliffs", "sec": "above", "src": "cliffs", "t_in": 5.0, "bars": 1, "v": "rot"},
+  {"role": "a_platform", "sec": "above", "src": "platform", "t_in": 2.0, "bars": 1, "v": "rot"},
+  {"role": "a_pools", "sec": "above", "src": "pools", "t_in": 0.3, "bars": 2, "v": "rot", "zoom": [1.0, 1.15],
+   "centre": [1980, 1070], "note": "the two of them lying in the rock pools: people, from above"},
+  {"role": "a_reveal", "sec": "above", "src": "reveal", "t_in": 0.0, "speed": 0.8, "bars": 2, "v": "rot2fit",
+   "morph": [1.55, 3.55], "note": "the drone tilts up from straight down to the horizon: the frame turns upright with it"},
+  {"role": "b_waves", "sec": "level", "src": "waves", "t_in": 2.4, "bars": 2, "natural": -26},
+  {"role": "b_dog", "sec": "level", "src": "dog", "t_in": 0.4, "bars": 2, "natural": -27},
+  {"role": "c_walk", "sec": "sunset", "src": "walk", "t_in": 3.0, "bars": 2, "natural": -31, "hpf": 180},
+  {"role": "c_sun", "sec": "sunset", "src": "sunset", "t_in": 13.6, "bars": 2},
+  {"role": "c_crowd", "sec": "dip", "src": "walk", "t_in": 54.0, "bars": 2, "natural": -26, "hpf": 180,
+   "note": "the quiet beat: the crowd watching the sun go, the music thins to a pad"},
+  {"role": "d_moon", "sec": "moon", "src": "moon", "t_in": 6.0, "bars": 3, "zoom": [1.0, 1.45], "centre": "track",
+   "natural": -30, "trans_in": ["whip", 0.4],
+   "note": "turn around: a whip pan to the full moon rising behind us; push in on it (track.py --bright 1974,1178)"},
+  {"role": "d_nebula", "sec": "end", "src": "nebula", "bars": 3, "tail": 1.2, "fit": 1.6, "zoom": [1.0, 1.1],
+   "centre": [1186, 983], "trans_in": ["dissolve", 1.6], "fade_out": 2.2,
+   "note": "the round moon dissolves into a round nebula photographed that night; picture and music fade out together"}
+ ],
+ "lines": [
+  {"id": "1", "shot": "a_eye", "at": 0.55, "text": {"zh": "这里的土是红色的，海水是蓝绿色的。", "en": "The earth here is red, and the sea is blue-green."},
+   "must": {"zh": ["红色", "海水"], "en": ["red"]}},
+  {"id": "2", "shot": "d_moon", "at": 0.75, "text": {"zh": "回头一看，满月刚好升起来。", "en": "We turned around, and the full moon was rising."},
+   "must": {"zh": ["满月"], "en": ["moon"]}},
+  {"id": "3", "shot": "d_nebula", "at": 0.9, "text": {"zh": "那天晚上，我们在这里拍到了这团星云。", "en": "That night, we photographed this nebula from here."},
+   "must": {"zh": ["星云"], "en": ["nebula"]}}
+ ],
+ "voice": {"ref": "voice/ref.wav", "ref_text": "REPLACE with the exact words of voice/ref.wav, confirmed by the speaker", "speed": 0.9},
+ "music": {
+  "key": "E", "seed": 7,
+  "sections": {
+   "hook": {"style": "intro", "chords": ["C#m9", "Aadd9"]},
+   "above": {"style": "groove", "chords": ["E", "B/D#", "C#m", "A"], "hit": true},
+   "level": {"style": "light", "chords": ["A", "B", "G#m", "C#m"]},
+   "sunset": {"style": "halftime", "chords": ["A", "E/G#", "F#m", "B"]},
+   "dip": {"style": "breath", "chords": ["A"]},
+   "moon": {"style": "ambient", "chords": ["C#m", "A", "B"]},
+   "end": {"style": "outro", "chords": ["Aadd9", "E", "E"]}
+  }
+ },
+ "mix": {"lufs": -16, "duck_db": 9}
+}

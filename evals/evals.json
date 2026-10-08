@@ -1,0 +1,23 @@
+{
+  "skill_name": "footage-to-vlog",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Edit the clips in ~/Desktop/dive-trip (action camera, some underwater, two phone clips) into a 45-second vertical vlog for Xiaohongshu. Original music, and the underwater part should sound muffled. No narration.",
+      "expected_output": "Inventory flags the phone HDR clips and converts them; contact sheets and a CLIP scan before planning; a plan with the rarest moment as the hook; an EDL that checks clean; landscape shots fitted (not cropped) in 9:16; underwater shots graded; a score with an underwater section; a 2160x3840 master at about -16 LUFS and a phone preview under 28 MB.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "相册里 9 月 26 日以后拍的横屏视频，帮我剪一条带我自己声音解说的视频，竖屏和横屏各一版。我录好了一段 30 秒的声音：~/voice/me.m4a",
+      "expected_output": "Photos listing and export of the right date range; HDR to SDR; a reference cut to <= 11.5 s with a transcript the user is asked to confirm; a short plain narration script shown before generating; every line verified by Whisper alone and in the final mix; V and H masters with burned Chinese subtitles and an .srt.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Make an English version of my existing edit (edit/edl.json) for YouTube: English narration in my cloned voice, a description with chapters, and three thumbnails I can A/B test.",
+      "expected_output": "Lines given an en text with must-words; narrate.py --lang en; H master with AAC 384k and a clean .srt; chapter skeleton from the sections; three genuinely different 1280x720 covers under 2 MB; the altered/synthetic content disclosure noted; nothing published.",
+      "files": []
+    }
+  ]
+}

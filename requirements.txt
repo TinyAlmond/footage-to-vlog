@@ -1,0 +1,10 @@
+# core: picture, score, mix, exports, covers
+numpy>=1.26
+scipy>=1.11
+opencv-python>=4.8
+pillow>=10.0
+fonttools>=4.40
+# scanning (CLIP), tracking (OWLv2), narration (F5-TTS) and Whisper checks - optional, ~3 GB of models on first use
+torch>=2.2
+transformers>=4.45
+f5-tts>=1.1
