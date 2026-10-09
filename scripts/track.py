@@ -7,8 +7,10 @@ Three trackers, pick the one the subject allows (the simple ones are steadier wh
 The path is median + Gaussian smoothed (and pan-speed limited for --owl) so the framing never jitters, and covers the
 transition frames around the shot. compose.py reads it for shots with "centre": "track".
 
-usage: python track.py edl.json ROLE (--color SPEC | --bright X,Y | --owl QUERY) [--win 25] [--smooth 6]
+usage: python track.py edl.json ROLE (--color SPEC | --bright X,Y | --owl QUERY [--seed X,Y]) [--win 25] [--smooth 6]
                        [--sample-fps 4] [--max-pan 0.18] [--sheet]
+--owl follows the same object from frame to frame (the nearest good detection to the last one); --seed says which
+one to start from when there are several (two boats, two people).
 """
 import argparse
 import json
@@ -91,7 +93,7 @@ def by_brightness(fr, seed, k, win=25):
     return xs, ys
 
 
-def by_owl(fr, query, fps, sample_fps=4.0):
+def by_owl(fr, query, fps, sample_fps=4.0, seed=None):
     import torch
     from PIL import Image
     from transformers import Owlv2ForObjectDetection, Owlv2Processor
@@ -101,6 +103,7 @@ def by_owl(fr, query, fps, sample_fps=4.0):
     step = max(1, int(round(fps / sample_fps)))
     S = max(fr.shape[1:3])                          # OWLv2 pads to a square: boxes come back in padded coordinates
     xs, ys, sc = np.full(len(fr), np.nan), np.full(len(fr), np.nan), np.zeros(len(fr))
+    last = None if seed is None else np.array(seed, float)
     for i in range(0, len(fr), step):
         inp = proc(text=[[query]], images=Image.fromarray(fr[i][..., ::-1]), return_tensors='pt').to(dev)
         with torch.no_grad():
@@ -108,9 +111,17 @@ def by_owl(fr, query, fps, sample_fps=4.0):
         r = proc.post_process_grounded_object_detection(out, threshold=0.0, target_sizes=torch.tensor([[S, S]]),
                                                         text_labels=[[query]])[0]
         if len(r['scores']):
-            j = int(r['scores'].argmax())
-            x0, y0, x1, y1 = r['boxes'][j].tolist()
-            xs[i], ys[i], sc[i] = (x0 + x1) / 2, (y0 + y1) / 2, float(r['scores'][j])
+            boxes = r['boxes'].cpu().numpy()
+            scores = r['scores'].cpu().numpy()
+            cxy = np.stack([(boxes[:, 0] + boxes[:, 2]) / 2, (boxes[:, 1] + boxes[:, 3]) / 2], 1)
+            if last is not None:           # prefer the same object: two boats, two quokkas - don't jump between them
+                d = np.hypot(*(cxy - last).T) / fr.shape[2]
+                j = int(np.argmax(scores * np.exp(-(d / 0.12) ** 2)))
+            else:
+                j = int(scores.argmax())
+            xs[i], ys[i], sc[i] = cxy[j][0], cxy[j][1], float(scores[j])
+            if scores[j] >= 0.12:
+                last = cxy[j]
     ok = sc >= max(0.12, 0.35 * sc.max())            # confident detections only
     xs[~ok], ys[~ok] = np.nan, np.nan
     print(f'OWLv2 "{query}": {int(ok.sum())} confident of {len(range(0, len(fr), step))} sampled frames '
@@ -145,6 +156,7 @@ def main():
     g.add_argument('--color')
     g.add_argument('--bright', help='seed X,Y in source pixels (where the target is at the start of the shot)')
     g.add_argument('--owl', help='text query, e.g. "a quokka"')
+    ap.add_argument('--seed', help='--owl: X,Y (source px) of the one you mean when there are several')
     ap.add_argument('--win', type=int, default=25, help='--bright search window (analysis px)')
     ap.add_argument('--smooth', type=float, default=6.0, help='Gaussian sigma in frames')
     ap.add_argument('--sample-fps', type=float, default=4.0, help='--owl detections per second')
@@ -166,7 +178,8 @@ def main():
     elif a.bright:
         xs, ys = by_brightness(fr, [float(v) for v in a.bright.split(',')], k, a.win)
     else:
-        xs, ys = by_owl(fr, a.owl, fps, a.sample_fps)
+        seed = [float(v) / k for v in a.seed.split(',')] if a.seed else None
+        xs, ys = by_owl(fr, a.owl, fps, a.sample_fps, seed)
     found = int(np.isfinite(xs).sum())
     sig = a.smooth if not a.owl else max(a.smooth, 0.6 * fps)
     x, y = smooth(xs, sig=sig), smooth(ys, sig=sig)

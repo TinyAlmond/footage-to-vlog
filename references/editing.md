@@ -58,6 +58,10 @@ changed. Read this before planning the story, and again before showing a cut.
   shapes (the round moon into a round nebula); a dip to black for going under water, night falling, a time jump.
   Avoid gimmicks: kaleidoscopes, blink cuts, wipes and plain slideshow dissolves between stills were all rejected
   ("太生硬", "太像PPT了").
+- **A motif gives a montage its spine**: scenery strung together is a slideshow ("只是简单的把景色拼接"). Pick one
+  visual idea and let every section carry it - eyes and circles (an eye-shaped loop in the red earth -> the sun ->
+  round rock pools -> a boat like a pupil -> the moon -> the Eye of God), a colour, a direction of travel. Centre the
+  motif in every shot and hand it over with match cuts on the hits and zoom-through transitions elsewhere.
 - **Stills must move**: a slow push, a constant spin for astro images, parallax. A plain zoom on a photo is a slide.
   Between photos prefer a continuous motion (a shared centre, a spiral) over any cut.
 - **Motion is constant and one-directional**: a rotation runs at one deg/s, one direction, for the whole film.

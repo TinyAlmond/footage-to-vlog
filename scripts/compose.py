@@ -11,7 +11,8 @@ Stills (jpg/png/tif): "fit": "cover" | "contain" | scale, "centre", "zoom", "spi
 "feather": fraction of the edge or "round" (a soft disc - use it with spin).
 Grades: "grade": "water" (haze off, red partly back, saturation, S-curve; read in 16 bit) or a dict of levels / sat /
 curve / exposure / wb. Transitions ("trans_in" on the incoming shot): ["dissolve", s], ["dip", s] (through black),
-["whip", s, "left"|"right"] (a fast pan with motion blur). "fade_in" / "fade_out" (s) fade a shot from / to black.
+["whip", s, "left"|"right"] (a fast pan with motion blur), ["zoom", s, depth] (fly forward through the centre into
+the next shot - a shape match when both subjects are centred). "fade_in" / "fade_out" (s) fade a shot from / to black.
 Subtitles from "lines" (+ narration/<lang>/lines.json timing), "captions", "titles" are drawn in the same pass;
 EDL "subs": {"size", "y" (V, fraction of height), "bottom" (H, px), "plate" (0..1 dark plate for bright scenes)}.
 
@@ -514,9 +515,28 @@ def whip(cx, A, B, p, direction='left'):
     return out
 
 
+def scale_centre(cx, img, s):
+    """scale a canvas about its centre (edges extended, so nothing turns black)"""
+    if abs(s - 1.0) < 1e-3:
+        return img
+    M = np.float32([[s, 0, (1 - s) * cx.CW / 2], [0, s, (1 - s) * cx.CH / 2]])
+    return cv2.warpAffine(img, M, (cx.CW, cx.CH), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
+
+
+def zoom_through(cx, A, B, p, depth=0.4):
+    """keep flying forward through the centre: A swells past the frame, B arrives a little small and grows into
+    place, crossfading. With both subjects centred (a circle into a circle), the shapes hand over at one spot."""
+    e = ease(p)
+    A2 = scale_centre(cx, A, 1 + depth * p * p)
+    B2 = scale_centre(cx, B, 1 - depth * 0.4 * (1 - p) ** 2)
+    return cv2.addWeighted(A2, 1 - e, B2, e, 0)
+
+
 def blend(cx, typ, A, B, p, extra):
     if typ == 'whip':
         return whip(cx, A, B, p, extra or 'left')
+    if typ == 'zoom':
+        return zoom_through(cx, A, B, p, float(extra) if extra else 0.4)
     if typ == 'dip':
         return (A * (1 - ease(2 * p))).astype(np.uint8) if p < 0.5 else (B * ease(2 * p - 1)).astype(np.uint8)
     return cv2.addWeighted(A, 1 - ease(p), B, ease(p), 0)

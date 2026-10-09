@@ -8,7 +8,8 @@
 | Underwater shots are grey-blue and hazy | water absorbs red, scatters light | `"grade": "water"` (16-bit, per-shot levels) |
 | Slow motion stutters | `speed` < 1 on 30 fps footage repeats frames | slow down only 60 fps+ footage (0.5x of 60 fps = every frame used) |
 | The subject drifts to the edge during a zoom | fixed centre, or the camera itself drifted | `track.py` + `"centre": "track", "lock": true`; pick a window where the camera is steady |
-| The tracker jumps to the wrong thing | seed too far away / colour range too wide | `--sheet` and look; move the seed to the first frame's position; narrow the range |
+| The tracker jumps to the wrong thing | seed too far away / colour range too wide; OWLv2 picking the other boat / person | `--sheet` and look; move the seed to the first frame's position; narrow the range; `--owl ... --seed X,Y` follows one object |
+| A match transition lands side by side, not on top | the subject is not where you guessed (a bright rim biases a brightness peak) | measure the subject's centroid in a rendered frame and correct `centre`; `fill` needs zoom > 1 to move the centre at all |
 | Black corners while a shot turns (rot2fit) | the turning frame does not cover the canvas | built in: the blurred fill sits behind; if you write your own, never leave black |
 | Subtitles are boxes (tofu) | Latin font (DM Mono, Jura) used for CJK, or ′ ″ in Jura | the scripts pick a CJK font for CJK text and warn about missing glyphs - read the warnings |
 | Subtitles hard to read over foam, snow, sky | white text on white | `"subs": {"plate": 0.3}` |

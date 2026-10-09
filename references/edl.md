@@ -99,6 +99,7 @@ amount, 0.032), `exposure` (stops), `wb` ([r, g, b] gains).
 | `["dissolve", 1.6]` | matching shapes (moon -> nebula), time passing |
 | `["dip", 0.7]` | through black: going under water, falling asleep, a new day |
 | `["whip", 0.4, "left"]` | a fast pan with motion blur: "turning around" (the score adds a whoosh) |
+| `["zoom", 0.8]` (`["zoom", s, depth]`) | fly forward through the centre into the next shot: the outgoing picture swells past the frame while the next grows into place. With both subjects centred (a circle into a circle: sun -> pool -> moon -> nebula) it is a shape match that never reads as a cut |
 
 The transition straddles the cut (half before, half after), so both shots need frames beyond their edges; a shot
 cannot be shorter than its two transitions. `fade_in` / `fade_out` (seconds) fade a shot from / to black - the last
