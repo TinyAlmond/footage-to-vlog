@@ -20,6 +20,8 @@ at every step.
   tracked subject.
 - **Picture**: underwater grade (haze off, red back, 16-bit), phone HDR to SDR, whip pans, dissolves, dips, living
   stills, titles and captions in a quiet editorial type.
+- **Or your song**: give it a track you own and it finds every beat and bar line (beat_this), picks the stretch
+  with you, and cuts on the song's real bars - even where a ballad's tempo drifts.
 - **An original score** synthesised on the edit's bar grid: per-section styles (intro, groove, light, half-time,
   breath, ambient, outro), designed loudness per section, hits on the cuts, whooshes on whip pans, and a muffled
   "heard from under water" version for diving scenes. No licence questions.

@@ -8,3 +8,4 @@ fonttools>=4.40
 torch>=2.2
 transformers>=4.45
 f5-tts>=1.1
+beat_this>=1.1          # beat and bar tracking when cutting to an existing song

@@ -5,7 +5,7 @@
 - [Natural sound](#natural-sound)
 - [Narration in the user's cloned voice (narrate.py)](#narration-in-the-users-cloned-voice-narratepy)
 - [The mix (mix.py) and its checks](#the-mix-mixpy-and-its-checks)
-- [Using other music](#using-other-music)
+- [Cutting to an existing song](#cutting-to-an-existing-song)
 
 ## The score (score.py)
 
@@ -143,9 +143,28 @@ videos; for paid or sponsored work, use a commercially licensed TTS. Whisper, CL
   right): the check is lenient there - if it still flags one, compare with the clip's own sound before changing
   anything.
 
-## Using other music
+## Cutting to an existing song
 
-If the user brings a track, they must hold the rights for the platform (a licensed library, their own music).
-Pass it with `mix.py --music track.wav`, set `bpm` in the EDL to the track's tempo and line the cuts up with its
-bars (find the first downbeat by ear or with a beat tracker, and offset the first shot). Most of the dynamics then
-come from the track itself - check the per-section report anyway.
+When the user wants a particular song, the film is cut to that song's own bars:
+
+1. **The file**: a DRM-free copy the user owns (bought from the iTunes Store / Amazon / Bandcamp, their own track).
+   Streaming downloads (Apple Music, QQ 音乐 .mflac/.mgg, Spotify) are encrypted and will not decode - and never
+   download songs from unofficial sites.
+2. **Analyse it**: `python scripts/beats.py song.m4a` -> beats.json + beats.png. Beats and bar starts come from
+   beat_this (`pip install beat_this`), each beat snapped to the start of its attack; a song recorded to a click
+   gets a constant-tempo grid fitted to the beats (the printout says whether it held). Look at beats.png: bar
+   numbers, loudness, sections (blue loud = chorus, brown quiet = verse / intro).
+3. **Choose the stretch**: 45-90 s for short-video platforms - often the last chorus into the outro (the song's own
+   ending is the best ending), or a verse into the first chorus. Put the strongest images on the chorus downbeats,
+   the quiet beats (留白) on the verse; change shots on bar lines, big changes on phrase starts (every 4 or 8 bars).
+4. **The EDL**: `"music": {"file": "song.m4a", "beats": "beats.json", "start_bar": 52}` (or `"start": seconds`;
+   optional `"fade_in"`, `"fade_out"`). Shots then count the song's real bars and beats (`"bars": 2` runs to the
+   second bar line after the cut), so the cuts stay on the music even where the tempo drifts. score.py is not used;
+   mix.py plays the song from that bar under the natural sound (ducking under voices as usual) and fades it out
+   with the picture. Narration over a song with vocals clashes: prefer none, or only over an instrumental stretch.
+5. **Rights**: the user needs the right to use the song where they post. YouTube Content ID will claim a commercial
+   song (ads go to the rights holder, some countries block it). On Xiaohongshu / Douyin / Instagram / TikTok the
+   safe route is the platform's own music library: export a version without music (`mix.py edl.json --no-music
+   --out mix_nomusic.wav`, then finish.py with `--audio mix_nomusic.wav --name ..._nomusic`) and add the same song
+   in the app when posting, starting it at the song time where the film's cut starts. Keep the version with the
+   song for the user's own archive.

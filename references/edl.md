@@ -143,6 +143,16 @@ shot's `fade_out` also sets how the music ends.
 
 Section keys are the shots' `sec` names. Styles, chords, tunes and fx are described in sound.md.
 
+**Cut to an existing song instead** (sound.md, "Cutting to an existing song"):
+
+```json
+"music": {"file": "music/song.m4a", "beats": "beats.json", "start_bar": 52, "fade_out": 3.0}
+```
+
+`beats.json` comes from `beats.py`. `start_bar` (or `start` in seconds) is where in the song the film begins. Shots'
+`bars` / `beats` then count the song's own bar lines and beats; `dur` stays free (and pushes later cuts off the
+grid). `bpm` is ignored.
+
 ## A complete example
 
 `examples/edl.example.json` - a 70 s travel film: a top-down hook with a tracked pull-out, a rotated aerial section,

@@ -299,10 +299,45 @@ def bar_seconds(edl):
     return edl['beats_per_bar'] * 60.0 / edl['bpm']
 
 
+def song(edl):
+    """the existing song the film is cut to, or None: dict(path, start (s into the song), beats, bars (song times))"""
+    m = edl.get('music', {})
+    if not m.get('file'):
+        return None
+    path = source_path(edl, m['file'])
+    bp = source_path(edl, m.get('beats', 'beats.json'))
+    if not os.path.exists(bp):
+        raise SystemExit(f'music.file is set but {bp} does not exist: run beats.py on the song first')
+    b = json.load(open(bp))
+    g = b.get('grid', {})
+    beats = g['beats'] if g.get('use') else b['beats']
+    bars = [x['t'] for x in b['bars']]
+    if 'start_bar' in m:
+        start = bars[int(m['start_bar'])]
+    else:
+        start = float(m.get('start', bars[0]))
+    return dict(path=path, start=start, beats=np.array(beats), bars=np.array(bars), duration=b.get('duration'),
+                meter=b.get('meter', 4))
+
+
+def _next_on(times, pos, n, step):
+    """the n-th time in `times` strictly after pos (extrapolated past the end with `step`)"""
+    later = times[times > pos + 1e-3]
+    if len(later) >= n:
+        return float(later[n - 1])
+    last = float(later[-1]) if len(later) else pos
+    return last + step * (n - len(later))
+
+
 def timeline(edl):
     """shots with frame-exact start/length: each cut is its grid position rounded to the nearest output frame.
     Length per shot: `bars` or `beats` (on the music grid) or `dur` (seconds); `tail` adds seconds after the last
-    shot's grid end (a ring-out that is not on the grid)."""
+    shot's grid end (a ring-out that is not on the grid). With an existing song ("music": {"file": ...}), the grid is
+    the song's own bars and beats from beats.json: `bars: n` runs to the n-th bar line after the cut, `beats: n` to
+    the n-th beat."""
+    sg = song(edl)
+    if sg is not None:
+        return _song_timeline(edl, sg)
     fps = parse_fps(edl['fps'])
     beat = 60.0 / edl['bpm']
     out, t = [], 0.0
@@ -322,6 +357,31 @@ def timeline(edl):
         b = round(t * fps) + round(tail * fps)
         out.append(dict(s, role=s.get('role', f'shot{i}'), sec=s.get('sec', 'main'), start_f=a, len_f=b - a,
                         start=a / fps, dur=(b - a) / fps, index=i))
+    return out
+
+
+def _song_timeline(edl, sg):
+    fps = parse_fps(edl['fps'])
+    bar_step = float(np.median(np.diff(sg['bars']))) if len(sg['bars']) > 1 else 2.0
+    beat_step = float(np.median(np.diff(sg['beats']))) if len(sg['beats']) > 1 else 0.5
+    pos = sg['start']
+    out = []
+    shots = edl['shots']
+    for i, s in enumerate(shots):
+        if 'bars' in s:
+            end = _next_on(sg['bars'], pos, int(s['bars']), bar_step)
+        elif 'beats' in s:
+            end = _next_on(sg['beats'], pos, int(s['beats']), beat_step)
+        elif 'dur' in s:
+            end = pos + float(s['dur'])
+        else:
+            raise ValueError(f"shot {s.get('role', i)}: give 'bars', 'beats' or 'dur'")
+        a = round((pos - sg['start']) * fps)
+        tail = s.get('tail', 0) if i == len(shots) - 1 else 0
+        b = round((end - sg['start']) * fps) + round(tail * fps)
+        out.append(dict(s, role=s.get('role', f'shot{i}'), sec=s.get('sec', 'main'), start_f=a, len_f=b - a,
+                        start=a / fps, dur=(b - a) / fps, index=i, song_t=round(pos, 3)))
+        pos = end
     return out
 
 
@@ -460,6 +520,15 @@ def check(edl, lang=None, quiet=False):
                                 f"less than 0.3 s apart")
             if b > T - 0.5:
                 problems.append(f"line {i} ends {b:.2f}s, the video ends {T:.2f}s")
+    sg = song(edl)
+    if sg is not None and not quiet:
+        end = sg['start'] + T
+        print(f"song {os.path.basename(sg['path'])}: from {sg['start']:.2f}s to {end:.2f}s"
+              + (f" of {sg['duration']:.1f}s" if sg.get('duration') else ''))
+        if sg.get('duration') and end > sg['duration'] + 0.5:
+            problems.append(f"the film runs {end - sg['duration']:.1f}s past the end of the song")
+        if not os.path.exists(sg['path']):
+            problems.append(f"song not found: {sg['path']}")
     if not quiet:
         print(f'total {T:.2f}s, {total_frames(tl)} frames at {fps:.3f} fps; {len(tl)} shots; '
               f'sections: ' + ', '.join(f'{n} {a:.1f}-{b:.1f}' for n, a, b in sections(tl)))

@@ -32,7 +32,7 @@ os.environ.setdefault('PYTORCH_ENABLE_MPS_FALLBACK', '1')
 import numpy as np
 from scipy.io import wavfile
 
-from common import SR, line_events, line_lang, line_text, load_edl, out_path, timeline
+from common import SR, line_events, line_lang, line_text, load_edl, out_path, song, timeline
 
 SEEDS = (7, 11, 23, 42, 3, 5, 99, 123, 1, 2, 13, 17, 31, 64, 77, 256)
 ZH_PROMPT = '以下是普通话的句子，使用简体中文。'        # nudges Whisper to simplified characters
@@ -94,6 +94,11 @@ def level(x, sr):
                         'highpass=f=80,loudnorm=I=-18:TP=-2:LRA=7,aresample=48000',
                         '-ac', '1', '-c:a', 'pcm_f32le', b], check=True)
         return wavfile.read(b)[1].astype(np.float32)
+
+
+def lufs_mono(x):
+    import synth
+    return synth.lufs(np.asarray(x, np.float64))
 
 
 def load_audio(path, sr=24000):
@@ -175,10 +180,18 @@ def main():
     info = json.load(open(info_p)) if os.path.exists(info_p) else {}
     failed = []
     bed, starts = None, {}
-    mp = os.path.join(edl['_dir'], 'music.wav')
+    sg = song(edl)
+    mp = sg['path'] if sg else os.path.join(edl['_dir'], 'music.wav')
     if os.path.exists(mp) and not a.no_context:
-        bed = wavfile.read(mp)[1].astype(np.float32)
-        bed = (bed.mean(1) if bed.ndim == 2 else bed) * 10 ** (-edl.get('mix', {}).get('duck_db', 9.0) / 20)
+        if sg:
+            raw = subprocess.run(['ffmpeg', '-v', 'error', '-ss', f"{sg['start']:.3f}", '-i', mp, '-ac', '1', '-ar',
+                                  str(SR), '-f', 'f32le', '-'], capture_output=True, check=True).stdout
+            bed = np.frombuffer(raw, np.float32).copy()
+            bed *= 10 ** ((-16.0 - lufs_mono(bed)) / 20)               # the song at the level mix.py will set
+        else:
+            bed = wavfile.read(mp)[1].astype(np.float32)
+            bed = bed.mean(1) if bed.ndim == 2 else bed
+        bed = bed * 10 ** (-edl.get('mix', {}).get('duck_db', 9.0) / 20)
         starts = {k: x0 for k, x0, _, _, _ in line_events(edl, timeline(edl), lang)}
         print('checking every take with music.wav playing under it')
     for ln in lines:

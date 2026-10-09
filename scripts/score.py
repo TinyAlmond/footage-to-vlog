@@ -385,6 +385,8 @@ def main():
     ap.add_argument('--out')
     a = ap.parse_args()
     edl = load_edl(a.edl)
+    if edl.get('music', {}).get('file'):
+        raise SystemExit('this EDL is cut to an existing song (music.file): no score to make - mix.py plays the song')
     mix, plan, cues, T = build(edl)
     out = a.out or out_path(edl, 'music.wav')
     wavfile.write(out, SR, mix.astype(np.float32))

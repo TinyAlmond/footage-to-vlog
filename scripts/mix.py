@@ -9,7 +9,10 @@ on-camera speech ("duck_db" 9 dB, "speech_duck_db" 12 dB), natural sound under t
 <= -1.5 dBFS (4x oversampled lookahead limiter). The report gives the loudness of every section of the finished
 mix - the dynamics you designed must survive the mix; a spread under ~4 LU sounds flat.
 
-usage: python mix.py edl.json [--lang zh] [--music music.wav] [--no-narration] [--out FILE]
+With an existing song ("music": {"file": ..., "start_bar": n}), the song plays from that bar and fades out with the
+picture ("fade_out" s, default the last shot's fade + 0.3).
+
+usage: python mix.py edl.json [--lang zh] [--music music.wav] [--no-narration] [--no-music] [--out FILE]
 EDL "mix": {"lufs": -16, "duck_db": 9, "speech_duck_db": 12, "ceiling": -1.5}
 """
 import argparse
@@ -22,7 +25,7 @@ from scipy import signal
 from scipy.io import wavfile
 
 import synth as S
-from common import line_events, line_lang, load_edl, out_path, sections, source_path, timeline, trans_frames, \
+from common import line_events, line_lang, load_edl, out_path, sections, song, source_path, timeline, trans_frames, \
     parse_fps, is_still, probe
 
 SR = S.SR
@@ -144,8 +147,9 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('edl')
     ap.add_argument('--lang')
-    ap.add_argument('--music', help='default: music.wav next to the EDL (score.py)')
+    ap.add_argument('--music', help='default: the EDL\'s song, else music.wav next to the EDL (score.py)')
     ap.add_argument('--no-narration', action='store_true')
+    ap.add_argument('--no-music', action='store_true', help='leave the music out (to add the song in the app)')
     ap.add_argument('--out')
     a = ap.parse_args()
     edl = load_edl(a.edl)
@@ -154,9 +158,18 @@ def main():
     T = tl[-1]['start'] + tl[-1]['dur']
     N = int(round(T * SR))
     lang = line_lang(edl, a.lang)
-    mp = a.music or os.path.join(edl['_dir'], 'music.wav')
+    sg = song(edl)
+    mp = a.music or (sg['path'] if sg else os.path.join(edl['_dir'], 'music.wav'))
     if os.path.exists(mp):
-        mus = src_audio(mp, 0.0, T)
+        m = edl.get('music', {})
+        mus = src_audio(mp, sg['start'] if (sg and not a.music) else 0.0, T)
+        if sg and not a.music:                       # a song cut out of the middle: ease in, fade with the picture
+            fin = int(m.get('fade_in', 0.02) * SR)
+            fout = int(m.get('fade_out', max(tl[-1].get('fade_out', 2.0) + 0.3, 1.5)) * SR)
+            if fin:
+                mus[:fin] *= (np.linspace(0, 1, fin) ** 2)[:, None]
+            mus[-fout:] *= (np.linspace(1, 0, fout) ** 1.5)[:, None]
+            print(f"music: {os.path.basename(mp)} from {sg['start']:.2f}s, fading out over the last {fout / SR:.1f}s")
     else:
         print(f'no music at {mp}: natural sound and narration only')
         mus = np.zeros((N, 2))
@@ -168,7 +181,10 @@ def main():
     nduck = ducking(wins, T, N, cfg['duck_db'])
     duck = np.minimum(nduck, ducking(speech, T, N, cfg['speech_duck_db']))
     mix = mus * duck[:, None] + nat * nduck[:, None] + nar
-    mix *= 10 ** ((cfg['lufs'] - S.lufs(mix)) / 20)
+    gain = 10 ** ((cfg['lufs'] - S.lufs(mix)) / 20)
+    if a.no_music:                                   # same levels as the full mix, so the song added later fits
+        mix = nat * nduck[:, None] + nar
+    mix *= gain
     mix, gmin = S.limiter(mix, ceil_db=cfg['ceiling'])
     out = a.out or out_path(edl, f"mix_{lang}.wav" if (edl.get('lines') and not a.no_narration) else 'mix.wav')
     wavfile.write(out, SR, mix.astype(np.float32))

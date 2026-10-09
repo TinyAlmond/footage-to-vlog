@@ -60,6 +60,7 @@ Read references/editing.md before planning; these six decide most of the result:
 | check | `common.py edl.json` | the timeline + every problem that would spoil a render |
 | picture | `compose.py edl.json V\|H` | renders the film (`--frames`: framing sheet; `--preview`: half size) |
 | sound | `score.py` | original score on the bar grid, per-section styles and loudness |
+| | `beats.py` | an existing song: beats, bar starts, sections -> cut on its real bars |
 | | `narrate.py` | cloned-voice lines, each verified by Whisper (alone and over the music) |
 | | `mix.py` | natural sound + narration + score, ducking, -16 LUFS, per-section report |
 | deliver | `finish.py edl.json VIDEO` | masters, phone preview, X version, .srt, loudness, `--verify` |
@@ -103,10 +104,12 @@ music styles, lines. Then `python $S/common.py edl.json` until it reports no pro
 Read the sheet: subject centred? nothing important cropped? text readable? Fix the EDL and repeat (`--only ROLE`
 re-checks one shot). It is quick - seconds for 4K sources, a minute or two for 8K.
 
-### 6. Score
+### 6. Score - or the user's song
 `score.py edl.json` - prints the loudness of each section; the shape must match the plan (references/sound.md:
 styles, chords, writing a tune, under water, fx). Run it before the narration so narrate.py can test each take
-over the music.
+over the music. If the user wants a particular song, cut to it instead: get a DRM-free file from them,
+`beats.py song.m4a`, choose the stretch, and set `"music": {"file", "start_bar"}` in the EDL so every cut lands on
+the song's own bar lines (sound.md, "Cutting to an existing song" - including the rights question).
 
 ### 7. Narration (only if wanted) - checkpoint 2
 Consent: clone only the voice of the person asking, from their own recording. Get a 20-30 s recording, then
