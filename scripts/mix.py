@@ -198,7 +198,9 @@ def main():
     for x0, x1 in wins:
         print(f'  voice {x0:6.2f}-{x1:6.2f}s')
     if len(lv) > 2 and max(lv) - min(lv) < 4:
-        print(f'NOTE: sections span only {max(lv) - min(lv):.1f} LU - it will sound flat; widen the score targets')
+        print(f'NOTE: sections span only {max(lv) - min(lv):.1f} LU' +
+              (" - that is the song's own shape (fine if it builds; a chorus at the climax still lifts)" if sg else
+               ' - it will sound flat; widen the score targets'))
     if 20 * np.log10(gmin) < -4:
         print('NOTE: the limiter works hard (> 4 dB): something is much louder than the rest - '
               'check the natural levels')
