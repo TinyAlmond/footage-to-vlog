@@ -162,6 +162,15 @@ When the user wants a particular song, the film is cut to that song's own bars:
    second bar line after the cut), so the cuts stay on the music even where the tempo drifts. score.py is not used;
    mix.py plays the song from that bar under the natural sound (ducking under voices as usual) and fades it out
    with the picture. Narration over a song with vocals clashes: prefer none, or only over an instrumental stretch.
+   **Cutting on the lyrics** (each new sung line brings the next shot - what people mean by "卡点" on a vocal song):
+   `python scripts/lyrics.py song.wav --from <start s> --gap 0.35` writes lyrics/lines.json (Whisper word times in
+   overlapping 12 s windows, each line start moved to the strongest vocal-band onset nearby, snapped to a beat within
+   0.12 s; pickups sung before the beat keep their own onset). Treat it as a draft: Whisper word times drift by
+   0.2-0.9 s and it merges lines sung without a breath. Where two passes disagree, decide on the vocal energy (HPSS
+   harmonic part, 250-3000 Hz): the line starts where the level rises after a dip. Edit the file by hand, set
+   `"music": {..., "lines": "lyrics/lines.json"}` and give shots `"lines": 1` (to the next line start); long lines
+   need long clips (check source length / speed) and a tracked subject can walk out of a longer shot - re-run
+   track.py and look at the sheet. Use hard cuts on lyric lines (`"trans_in": ["cut"]`): a zoom or dissolve is centred on the cut, so a 0.8 s one starts changing the picture 0.4 s before the singer does. Check the render with ffmpeg `scdet` against the expected cut times. Show the user line numbers and times, not the lyrics.
 5. **Rights**: the user needs the right to use the song where they post. YouTube Content ID will claim a commercial
    song (ads go to the rights holder, some countries block it). On Xiaohongshu / Douyin / Instagram / TikTok the
    safe route is the platform's own music library: export a version without music (`mix.py edl.json --no-music
