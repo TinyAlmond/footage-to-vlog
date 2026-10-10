@@ -61,6 +61,7 @@ Read references/editing.md before planning; these six decide most of the result:
 | picture | `compose.py edl.json V\|H` | renders the film (`--frames`: framing sheet; `--preview`: half size) |
 | sound | `score.py` | original score on the bar grid, per-section styles and loudness |
 | | `beats.py` | an existing song: beats, bar starts, sections -> cut on its real bars |
+| | `lyrics.py` | an existing song: lyric line start times -> cut on each sung line (`"lines": 1`) |
 | | `narrate.py` | cloned-voice lines, each verified by Whisper (alone and over the music) |
 | | `mix.py` | natural sound + narration + score, ducking, -16 LUFS, per-section report |
 | deliver | `finish.py edl.json VIDEO` | masters, phone preview, X version, .srt, loudness, `--verify` |

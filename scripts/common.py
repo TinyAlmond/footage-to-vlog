@@ -316,8 +316,12 @@ def song(edl):
         start = bars[int(m['start_bar'])]
     else:
         start = float(m.get('start', bars[0]))
+    lines = []
+    if m.get('lines'):                                       # lyric line cut times (song seconds), see lyrics.py
+        lp = source_path(edl, m['lines'])
+        lines = sorted(x['cut'] if isinstance(x, dict) else float(x) for x in json.load(open(lp)))
     return dict(path=path, start=start, beats=np.array(beats), bars=np.array(bars), duration=b.get('duration'),
-                meter=b.get('meter', 4))
+                meter=b.get('meter', 4), lines=np.array(lines))
 
 
 def _next_on(times, pos, n, step):
@@ -334,7 +338,7 @@ def timeline(edl):
     Length per shot: `bars` or `beats` (on the music grid) or `dur` (seconds); `tail` adds seconds after the last
     shot's grid end (a ring-out that is not on the grid). With an existing song ("music": {"file": ...}), the grid is
     the song's own bars and beats from beats.json: `bars: n` runs to the n-th bar line after the cut, `beats: n` to
-    the n-th beat."""
+    the n-th beat, and `lines: n` to the start of the n-th lyric line (music.lines, written by lyrics.py)."""
     sg = song(edl)
     if sg is not None:
         return _song_timeline(edl, sg)
@@ -372,10 +376,15 @@ def _song_timeline(edl, sg):
             end = _next_on(sg['bars'], pos, int(s['bars']), bar_step)
         elif 'beats' in s:
             end = _next_on(sg['beats'], pos, int(s['beats']), beat_step)
+        elif 'lines' in s:
+            if not len(sg['lines']) or int(s['lines']) > int(np.sum(sg['lines'] > pos + 1e-3)):
+                raise ValueError(f"shot {s.get('role', i)}: 'lines' needs music.lines with {s['lines']} line(s) "
+                                 f"after {pos:.2f}s")
+            end = _next_on(sg['lines'], pos, int(s['lines']), 0)
         elif 'dur' in s:
             end = pos + float(s['dur'])
         else:
-            raise ValueError(f"shot {s.get('role', i)}: give 'bars', 'beats' or 'dur'")
+            raise ValueError(f"shot {s.get('role', i)}: give 'bars', 'beats', 'lines' or 'dur'")
         a = round((pos - sg['start']) * fps)
         tail = s.get('tail', 0) if i == len(shots) - 1 else 0
         b = round((end - sg['start']) * fps) + round(tail * fps)
